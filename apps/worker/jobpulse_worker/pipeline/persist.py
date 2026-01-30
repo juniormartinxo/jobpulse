@@ -29,6 +29,14 @@ def _get_connection_pool() -> ConnectionPool:
     return _connection_pool
 
 
+def close_connection_pool() -> None:
+    """Close the connection pool. Should be called on worker shutdown."""
+    global _connection_pool
+    if _connection_pool is not None:
+        _connection_pool.close()
+        _connection_pool = None
+
+
 def persist_job_items(job_items: Iterable[JobItem]) -> dict[str, int]:
     items = list(job_items)
     if not items:

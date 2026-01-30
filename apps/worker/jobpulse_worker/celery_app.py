@@ -4,7 +4,7 @@ import logging
 import os
 
 from celery import Celery
-from celery.signals import worker_ready
+from celery.signals import worker_ready, worker_shutdown
 
 from jobpulse_worker.observability.logging import configure_logging
 from jobpulse_worker.observability.metrics import (
@@ -57,3 +57,11 @@ def _on_worker_ready(sender, **kwargs) -> None:
             "ping_task_id": result.id,
         },
     )
+
+
+@worker_shutdown.connect
+def _on_worker_shutdown(sender, **kwargs) -> None:
+    from jobpulse_worker.pipeline.persist import close_connection_pool
+
+    close_connection_pool()
+    logger.info("worker_shutdown", extra={"event": "worker_shutdown"})
