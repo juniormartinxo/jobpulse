@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     environment: str = Field(default="local")
     log_level: str = Field(default="INFO")
     api_port: int = Field(default=8000)
+    api_host: str = Field(default="0.0.0.0")
 
     model_config = SettingsConfigDict(env_prefix="JOBPULSE_", case_sensitive=False)
 
