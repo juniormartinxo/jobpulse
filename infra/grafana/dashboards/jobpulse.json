@@ -1,0 +1,53 @@
+{
+  "uid": "jobpulse",
+  "title": "JobPulse Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["jobpulse"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Jobs Scraped Total",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (source) (jobs_scraped_total)",
+          "legendFormat": "{{source}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Scrape Errors Total",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (source) (scrape_errors_total)",
+          "legendFormat": "{{source}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] }
+}
