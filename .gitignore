@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.dist/
+.build/
+.venv/
+venv/
+.env
+.env.*
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Logs
+*.log
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Docker
+*.pid
+
+# Grafana / Prometheus data (local volumes)
+/grafana/
+/prometheus/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+
+# Misc
+*.tmp
