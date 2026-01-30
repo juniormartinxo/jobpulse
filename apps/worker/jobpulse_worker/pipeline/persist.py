@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 from typing import Iterable
 
-from psycopg import Connection, connect
+from psycopg import Connection
+from psycopg_pool import ConnectionPool
 
 from jobpulse_worker.models.job_item import JobItem
 
@@ -11,6 +12,29 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://jobpulse:jobpulse@postgres:5432/jobpulse",
 )
+
+# Connection pool for production workloads with high throughput
+_connection_pool: ConnectionPool | None = None
+
+
+def _get_connection_pool() -> ConnectionPool:
+    global _connection_pool
+    if _connection_pool is None:
+        _connection_pool = ConnectionPool(
+            DATABASE_URL,
+            min_size=2,
+            max_size=10,
+            open=True,
+        )
+    return _connection_pool
+
+
+def close_connection_pool() -> None:
+    """Close the connection pool. Should be called on worker shutdown."""
+    global _connection_pool
+    if _connection_pool is not None:
+        _connection_pool.close()
+        _connection_pool = None
 
 
 def persist_job_items(job_items: Iterable[JobItem]) -> dict[str, int]:
@@ -22,7 +46,8 @@ def persist_job_items(job_items: Iterable[JobItem]) -> dict[str, int]:
     jobs_upserted = 0
     versions_inserted = 0
 
-    with connect(DATABASE_URL) as conn:
+    pool = _get_connection_pool()
+    with pool.connection() as conn:
         with conn.transaction():
             for item in items:
                 source_id = _get_source_id(conn, item.source, source_cache)
@@ -52,7 +77,10 @@ def _get_source_id(
         row = cursor.fetchone()
 
     if row is None:
-        raise ValueError(f"source_not_found: {source_name}")
+        raise ValueError(
+            f"source_not_found: {source_name}. "
+            "Source records must be pre-populated in the 'sources' table before ingesting jobs."
+        )
 
     source_id = int(row[0])
     cache[source_name] = source_id
@@ -73,7 +101,10 @@ def _upsert_job(conn: Connection, source_id: int, item: JobItem) -> int:
             )
             VALUES (%s, %s, %s, %s, NOW(), NOW())
             ON CONFLICT (source_id, canonical_hash)
-            DO UPDATE SET last_seen_at = EXCLUDED.last_seen_at
+            DO UPDATE SET
+                last_seen_at = EXCLUDED.last_seen_at,
+                source_job_id = COALESCE(EXCLUDED.source_job_id, jobs.source_job_id),
+                source_url = COALESCE(EXCLUDED.source_url, jobs.source_url)
             RETURNING id;
             """,
             (
@@ -85,6 +116,8 @@ def _upsert_job(conn: Connection, source_id: int, item: JobItem) -> int:
         )
         row = cursor.fetchone()
 
+    # This check should never fail as UPSERT always returns a row (inserted or updated).
+    # Kept as a safety guard for unexpected database states.
     if row is None:
         raise RuntimeError("job_upsert_failed")
     return int(row[0])

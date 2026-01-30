@@ -4,7 +4,7 @@ import logging
 import os
 
 from celery import Celery
-from celery.signals import worker_ready
+from celery.signals import worker_ready, worker_shutdown
 
 from jobpulse_worker.observability.logging import configure_logging
 from jobpulse_worker.observability.metrics import (
@@ -14,13 +14,15 @@ from jobpulse_worker.observability.metrics import (
 )
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 METRICS_PORT = int(os.getenv("METRICS_PORT", "8002"))
 
 celery_app = Celery(
     "jobpulse_worker",
-    broker=REDIS_URL,
-    backend=REDIS_URL,
+    broker=CELERY_BROKER_URL,
+    backend=CELERY_RESULT_BACKEND,
     include=["jobpulse_worker.tasks"],
 )
 
@@ -55,3 +57,11 @@ def _on_worker_ready(sender, **kwargs) -> None:
             "ping_task_id": result.id,
         },
     )
+
+
+@worker_shutdown.connect
+def _on_worker_shutdown(sender, **kwargs) -> None:
+    from jobpulse_worker.pipeline.persist import close_connection_pool
+
+    close_connection_pool()
+    logger.info("worker_shutdown", extra={"event": "worker_shutdown"})
