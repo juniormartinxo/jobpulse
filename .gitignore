@@ -41,3 +41,5 @@ playwright/.cache/
 
 # Misc
 *.tmp
+
+.seshat
