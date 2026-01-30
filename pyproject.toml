@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobpulse"
+version = "0.1.0"
+description = "JobPulse scraping and ingestion platform"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.111.0",
+  "uvicorn[standard]==0.29.0",
+  "celery[redis]==5.3.6",
+  "prometheus-client==0.20.0",
+  "psycopg[binary]==3.1.18",
+  "pydantic-settings==2.2.1",
+  "python-dotenv==1.0.1",
+  "playwright==1.41.2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff==0.5.6",
+  "mypy==1.11.1",
+  "pytest==8.2.2"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
