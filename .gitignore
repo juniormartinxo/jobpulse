@@ -39,6 +39,7 @@ htmlcov/
 playwright-report/
 playwright/.cache/
 
+
 # Misc
 *.tmp
 
