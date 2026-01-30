@@ -31,15 +31,14 @@ CREATE TABLE IF NOT EXISTS crawl_runs (
 CREATE TABLE IF NOT EXISTS jobs (
   id BIGSERIAL PRIMARY KEY,
   source_id BIGINT NOT NULL REFERENCES sources(id) ON DELETE RESTRICT,
-  source_job_id TEXT NOT NULL,
+  source_job_id TEXT,
   source_url TEXT NOT NULL,
   canonical_hash TEXT NOT NULL,
   first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT jobs_source_unique UNIQUE (source_id, source_job_id),
-  CONSTRAINT jobs_canonical_hash_unique UNIQUE (canonical_hash)
+  CONSTRAINT jobs_source_canonical_unique UNIQUE (source_id, canonical_hash)
 );
 
 CREATE TABLE IF NOT EXISTS job_versions (
@@ -73,6 +72,10 @@ CREATE INDEX IF NOT EXISTS idx_crawl_runs_source_started_at
 
 CREATE INDEX IF NOT EXISTS idx_jobs_source_last_seen_at
   ON jobs (source_id, last_seen_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS jobs_source_job_id_unique
+  ON jobs (source_id, source_job_id)
+  WHERE source_job_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_job_versions_job_scraped_at
   ON job_versions (job_id, scraped_at DESC);
